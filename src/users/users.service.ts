@@ -5,6 +5,7 @@ import { SingupInput } from 'src/auth/dto/inputs/signup.input';
 import { Repository } from 'typeorm';
 import { UpdateUserInput } from './dto/update-user.input';
 import { User } from './entities/user.entity';
+import { ValidRoles } from '../enum/valid-roles.enum';
 
 
 @Injectable()
@@ -38,9 +39,19 @@ export class UsersService {
     }
   }
 
-  async findAll(): Promise<User[]> {
-    const usuarios = await this.usersRepository.find()
-    return usuarios;
+  async findAll(roles: ValidRoles[]): Promise<User[]> {
+
+    if (roles.length == 0) return this.usersRepository.find({
+      // relations: {
+      //   lastUpdateBy: true,
+      // }
+    });
+
+    return this.usersRepository.createQueryBuilder()
+      .andWhere("ARRAY[roles] && ARRAY[:...roles]")
+      .setParameter("roles", roles)
+      .getMany();
+
   }
 
   async findOneByEmail(email: string): Promise<User> {
@@ -67,12 +78,40 @@ export class UsersService {
     }
   }
 
-  update(id: number, updateUserInput: UpdateUserInput) {
-    return `This action updates a #${id} user`;
+  async update(id: string, updateUserInput: UpdateUserInput, updateBy: User): Promise<User> {
+    try {
+      const user = await this.usersRepository.preload({
+        ...updateUserInput,
+        id
+      });
+
+      if (!user) throw new NotFoundException(`user with id ${user.id} not found`)
+
+
+      user.isActive = true;
+      user.lastUpdateBy = updateBy
+
+      const userUpdate = this.usersRepository.save(user);
+
+      return userUpdate
+
+    } catch (error) {
+      this.handleDBErrors(error);
+    }
+
   }
 
-  async block(id: string): Promise<User> {
-    throw new Error(`remove  method not implemented`)
+  async block(id: string, user: User): Promise<User> {
+
+    const userToBlock = await this.findOneById(id);
+
+    userToBlock.isActive = false;
+    userToBlock.lastUpdateBy = user;
+
+    const userDB = this.usersRepository.save(userToBlock);
+
+    return userDB;
+
   }
 
   private handleDBErrors(error: any): never {
