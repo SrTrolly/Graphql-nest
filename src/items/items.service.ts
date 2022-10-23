@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateItemInput, UpdateItemInput } from './dto/inputs';
 import { Item } from './entities/item.entity';
+import { User } from '../users/entities/user.entity';
 
 
 @Injectable()
@@ -14,21 +15,39 @@ export class ItemsService {
     private readonly itemRepository: Repository<Item>
   ) { }
 
-  async create(createItemInput: CreateItemInput): Promise<Item> {
+  async create(createItemInput: CreateItemInput, user: User): Promise<Item> {
 
-    const newItem = this.itemRepository.create(createItemInput);
+    const newItem = this.itemRepository.create({
+      ...createItemInput,
+      user
+    });
 
     const itemDB = await this.itemRepository.save(newItem);
 
     return itemDB;
   }
 
-  async findAll(): Promise<Item[]> {
-    return this.itemRepository.find();
+  async findAll(user: User): Promise<Item[]> {
+
+    const itemUser = await this.itemRepository.findBy({
+      user: {
+        id: user.id
+      }
+    })
+    return itemUser;
   }
 
-  async findOne(id: string): Promise<Item> {
-    const item = await this.itemRepository.findOneBy({ id: id });
+  async findOne(id: string, user: User): Promise<Item> {
+
+
+    const item = await this.itemRepository.findOneBy({
+      id,
+      user: {
+        id: user.id
+      }
+    });
+
+    console.log({ item });
 
     if (!item) throw new NotFoundException(`Item with id: ${id} not found`);
 
@@ -36,7 +55,9 @@ export class ItemsService {
 
   }
 
-  async update(id: string, updateItemInput: UpdateItemInput): Promise<Item> {
+  async update(id: string, updateItemInput: UpdateItemInput, user: User): Promise<Item> {
+
+    await this.findOne(id, user);
 
     const item = await this.itemRepository.preload(updateItemInput);
 
@@ -48,12 +69,26 @@ export class ItemsService {
 
   }
 
-  async remove(id: string): Promise<Item> {
+  async remove(id: string, user: User): Promise<Item> {
 
-    const item = await this.findOne(id);
+    const item = await this.findOne(id, user);
+
+    console.log({ item });
 
     await this.itemRepository.remove(item);
 
     return { id, ...item };
   }
+
+
+  async itemCountByUser(user: User): Promise<number> {
+    return this.itemRepository.count({
+      where: {
+        user: {
+          id: user.id
+        }
+      }
+    })
+  }
+
 }

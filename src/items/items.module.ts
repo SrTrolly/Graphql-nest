@@ -11,6 +11,10 @@ import { Item } from './entities/item.entity';
   ],
   imports: [
     TypeOrmModule.forFeature([Item])
+  ],
+  exports: [
+    ItemsModule,
+    TypeOrmModule
   ]
 })
 export class ItemsModule { }
