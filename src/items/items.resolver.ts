@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Int, ID, ResolveField, Parent } from '@nestjs/graphql';
 import { ItemsService } from './items.service';
 import { Item } from './entities/item.entity';
 import { CreateItemInput, UpdateItemInput } from './dto/inputs';
@@ -6,12 +6,21 @@ import { ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
+import { PaginationArgs } from 'src/common/dto/args';
+import { SearchArgs } from '../common/dto/args/search.args';
+import { ValidRoles } from 'src/enum/valid-roles.enum';
+import { ValidRolesArgs } from 'src/users/dto/args/roles.arg';
+import { UsersService } from '../users/users.service';
+
 
 
 @Resolver(() => Item)
 @UseGuards(JwtAuthGuard)
 export class ItemsResolver {
-  constructor(private readonly itemsService: ItemsService) { }
+  constructor(
+    private readonly itemsService: ItemsService,
+    private readonly usersService: UsersService
+  ) { }
 
   @Mutation(() => Item, { name: "createItem" })
   async createItem(
@@ -23,9 +32,11 @@ export class ItemsResolver {
 
   @Query(() => [Item], { name: 'items' })
   async findAll(
-    @CurrentUser() user: User
+    @CurrentUser() user: User,
+    @Args() paginationArgs: PaginationArgs,
+    @Args() searchArgs: SearchArgs
   ): Promise<Item[]> {
-    return this.itemsService.findAll(user);
+    return this.itemsService.findAll(user, paginationArgs, searchArgs);
   }
 
   @Query(() => Item, { name: 'item' })
@@ -51,4 +62,19 @@ export class ItemsResolver {
   ): Promise<Item> {
     return this.itemsService.remove(id, user);
   }
+
+  @ResolveField(() => [User], { name: "usersArg" })
+  async getUserByArgs(
+    @CurrentUser([ValidRoles.admin]) adminUser: User,
+    @Parent() user: User,
+    @Args() validRoles: ValidRolesArgs,
+    @Args() paginatioArgs: PaginationArgs,
+    @Args() searchArgs: SearchArgs,
+  ): Promise<User[]> {
+    return this.usersService.findAll(validRoles.roles, paginatioArgs, searchArgs);
+    // return this.usersService.findAll()
+  }
+
+
+
 }

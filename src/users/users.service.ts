@@ -6,6 +6,8 @@ import { Repository } from 'typeorm';
 import { UpdateUserInput } from './dto/update-user.input';
 import { User } from './entities/user.entity';
 import { ValidRoles } from '../enum/valid-roles.enum';
+import { PaginationArgs } from '../common/dto/args/pagination.args';
+import { SearchArgs } from '../common/dto/args/search.args';
 
 
 @Injectable()
@@ -39,7 +41,11 @@ export class UsersService {
     }
   }
 
-  async findAll(roles: ValidRoles[]): Promise<User[]> {
+  async findAll(roles: ValidRoles[], paginationArgs: PaginationArgs, searchArgs: SearchArgs): Promise<User[]> {
+
+    const { limit, offset } = paginationArgs
+    const { search } = searchArgs
+
 
     if (roles.length == 0) return this.usersRepository.find({
       // relations: {
@@ -47,10 +53,18 @@ export class UsersService {
       // }
     });
 
-    return this.usersRepository.createQueryBuilder()
+    const queryBuilder = this.usersRepository.createQueryBuilder()
+      .take(limit)
+      .skip(offset)
       .andWhere("ARRAY[roles] && ARRAY[:...roles]")
       .setParameter("roles", roles)
-      .getMany();
+
+
+    if (search) {
+      queryBuilder.andWhere("LOWER(fullName) Like :name", { name: `%${search.toLowerCase()}%` })
+    }
+
+    return queryBuilder.getMany();
 
   }
 

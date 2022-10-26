@@ -10,7 +10,7 @@ export class User {
   @Field(() => ID)
   id: string;
 
-  @Column()
+  @Column({ name: "fullname" })
   @Field(() => String)
   fullName: string;
 
@@ -45,6 +45,6 @@ export class User {
   lastUpdateBy?: User;
 
   @OneToMany(() => Item, (item) => item.user, { lazy: true })
-  @Field(() => [Item])
+  // @Field(() => [Item])
   items: Item[];
 }
