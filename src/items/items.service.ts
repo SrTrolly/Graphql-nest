@@ -74,8 +74,6 @@ export class ItemsService {
       }
     });
 
-    console.log({ item });
-
     if (!item) throw new NotFoundException(`Item with id: ${id} not found`);
 
     return item;

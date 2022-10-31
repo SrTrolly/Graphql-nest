@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { ItemsModule } from '../items/items.module';
 import { ItemsService } from '../items/items.service';
+import { ListsModule } from '../lists/lists.module';
 
 
 @Module({
@@ -15,7 +16,8 @@ import { ItemsService } from '../items/items.service';
   ],
   imports: [
     TypeOrmModule.forFeature([User]),
-    forwardRef(() => ItemsModule)
+    forwardRef(() => ItemsModule),
+    ListsModule
   ],
   exports: [
     TypeOrmModule,

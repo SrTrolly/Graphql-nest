@@ -10,7 +10,25 @@ type User {
   isActive: Boolean!
   lastUpdateBy: User
   itemCount: Int!
+  ListCount: Int!
   items(offset: Int = 0, limit: Int = 10, search: String): [Item!]!
+  Lists(offset: Int = 0, limit: Int = 10, search: String): [List!]!
+}
+
+type List {
+  id: ID!
+  name: String!
+  user: User!
+  items(offset: Int = 0, limit: Int = 10, search: String): [ListItem!]!
+  totalItems: Int!
+}
+
+type ListItem {
+  id: ID!
+  quantity: Float!
+  completed: Boolean!
+  list: List!
+  item: Item!
 }
 
 type Item {
@@ -18,6 +36,7 @@ type Item {
   name: String!
   quantityUnits: String
   user: User!
+  listItem: [ListItem!]!
   usersArg(roles: [ValidRoles!] = [], offset: Int = 0, limit: Int = 10, search: String): [User!]!
 }
 
@@ -39,6 +58,9 @@ type Query {
   user(id: ID!): User!
   items(offset: Int = 0, limit: Int = 10, search: String): [Item!]!
   item(id: ID!): Item!
+  lists(offset: Int = 0, limit: Int = 10, search: String): [List!]!
+  list(id: ID!): List!
+  listItem(id: ID!): ListItem!
 }
 
 type Mutation {
@@ -49,6 +71,11 @@ type Mutation {
   createItem(createItemInput: CreateItemInput!): Item!
   updateItem(updateItemInput: UpdateItemInput!): Item!
   removeItem(id: ID!): Item!
+  createList(createListInput: CreateListInput!): List!
+  updateList(updateListInput: UpdateListInput!): List!
+  deleteList(id: ID!): List!
+  createListItem(createListItemInput: CreateListItemInput!): ListItem!
+  updateListItem(updateListItemInput: UpdateListItemInput!): ListItem!
 
   """Ejecuta la construccion de la base de datos"""
   Seed: Boolean!
@@ -82,5 +109,29 @@ input CreateItemInput {
 input UpdateItemInput {
   name: String
   quantityUnits: String
+  id: ID!
+}
+
+input CreateListInput {
+  name: String!
+}
+
+input UpdateListInput {
+  name: String
+  id: ID!
+}
+
+input CreateListItemInput {
+  quantity: Float = 0
+  completed: Boolean = false
+  listId: ID!
+  itemId: ID!
+}
+
+input UpdateListItemInput {
+  quantity: Float = 0
+  completed: Boolean = false
+  listId: ID
+  itemId: ID
   id: ID!
 }
